@@ -38,20 +38,10 @@ type RWMutex struct {
 }
 
 func (i *RWMutex) saveFrames() {
-	i.frames = ""
+	buffer := make([]byte, 10000)
+	runtime.Stack(buffer, true)
 
-	pc := make([]uintptr, 15)
-	n := runtime.Callers(3, pc)
-
-	frames := runtime.CallersFrames(pc[:n])
-	for {
-		frame, more := frames.Next()
-		i.frames += fmt.Sprintf("%s:%d\n", frame.File, frame.Line)
-
-		if !more {
-			break
-		}
-	}
+	i.frames = string(buffer)
 }
 
 func (i *RWMutex) Lock() {
