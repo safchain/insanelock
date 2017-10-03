@@ -55,7 +55,16 @@ func (i *RWMutex) Lock() {
 		select {
 		case <-got:
 		case <-time.After(30 * time.Second):
-			panic(fmt.Sprintf("\n-- POTENTIAL DEADLOCK --\n%s-- POTENTIAL DEADLOCK --\n", i.frames))
+			err := fmt.Sprintf("\n-- POTENTIAL DEADLOCK --\n")
+			err += fmt.Sprintf("--   HOLDING THE LOCK --\n")
+			err += fmt.Sprintf("%s\n", i.frames)
+			err += fmt.Sprintf("--   TRYING TO LOCK --\n")
+
+			buffer := make([]byte, 10000)
+			runtime.Stack(buffer, true)
+
+			err += fmt.Sprintf("%s\n", string(buffer))
+			panic(err)
 		}
 	}()
 
