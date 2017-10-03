@@ -37,18 +37,14 @@ type RWMutex struct {
 	frames string
 }
 
-func (i *RWMutex) saveFrames() {
-	buffer := make([]byte, 10000)
-	runtime.Stack(buffer, true)
-
-	i.frames = string(buffer)
-}
-
 func (i *RWMutex) Lock() {
 	if !activated {
 		i.mutex.Lock()
 		return
 	}
+
+	buffer := make([]byte, 10000)
+	n := runtime.Stack(buffer, false)
 
 	got := make(chan bool)
 	go func() {
@@ -59,11 +55,8 @@ func (i *RWMutex) Lock() {
 			err += fmt.Sprintf("--   HOLDING THE LOCK --\n")
 			err += fmt.Sprintf("%s\n", i.frames)
 			err += fmt.Sprintf("--   TRYING TO LOCK --\n")
-
-			buffer := make([]byte, 10000)
-			runtime.Stack(buffer, true)
-
-			err += fmt.Sprintf("%s\n", string(buffer))
+			err += fmt.Sprintf("%s\n", string(buffer[:n]))
+			err += fmt.Sprintf("\n-- POTENTIAL DEADLOCK --\n")
 			panic(err)
 		}
 	}()
@@ -74,7 +67,7 @@ func (i *RWMutex) Lock() {
 	got <- true
 
 	// save the current stack
-	i.saveFrames()
+	i.frames = string(buffer[:n])
 }
 
 func (i *RWMutex) Unlock() {
