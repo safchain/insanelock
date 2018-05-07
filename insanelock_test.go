@@ -20,7 +20,7 @@
  *
  */
 
-package insamelock
+package insanelock
 
 import "testing"
 
@@ -31,7 +31,7 @@ func dealock() {
 }
 
 func TestLock(t *testing.T) {
-	activated = true
+	Activated = true
 
 	func() {
 		defer func() {

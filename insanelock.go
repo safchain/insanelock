@@ -20,17 +20,17 @@
  *
  */
 
-package insamelock
+package insanelock
 
 import (
 	"fmt"
-	"os"
 	"runtime"
 	"sync"
 	"time"
 )
 
-var activated bool
+var Activated bool
+var Timeout = time.Second * 30
 
 type RWMutex struct {
 	mutex  sync.RWMutex
@@ -38,7 +38,7 @@ type RWMutex struct {
 }
 
 func (i *RWMutex) Lock() {
-	if !activated {
+	if !Activated {
 		i.mutex.Lock()
 		return
 	}
@@ -51,7 +51,7 @@ func (i *RWMutex) Lock() {
 		select {
 		case <-got:
 		case <-time.After(30 * time.Second):
-			err := fmt.Sprintf("\n-- POTENTIAL DEADLOCK --\n")
+			err := fmt.Sprintf("\n-- POTENTIAL DEADLOCK --\n\n")
 			err += fmt.Sprintf("--   HOLDING THE LOCK --\n")
 			err += fmt.Sprintf("%s\n", i.frames)
 			err += fmt.Sprintf("--   TRYING TO LOCK --\n")
@@ -80,10 +80,4 @@ func (i *RWMutex) RLock() {
 
 func (i *RWMutex) RUnlock() {
 	i.mutex.RUnlock()
-}
-
-func init() {
-	if os.Getenv("INSANELOCK") == "true" {
-		activated = true
-	}
 }
