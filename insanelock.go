@@ -30,11 +30,12 @@ import (
 )
 
 var Activated bool
-var Timeout = time.Second * 30
+var Timeout = time.Second * 60
 
 type RWMutex struct {
 	mutex  sync.RWMutex
 	frames string
+	at time.Time
 }
 
 func (i *RWMutex) Lock() {
@@ -52,9 +53,9 @@ func (i *RWMutex) Lock() {
 		case <-got:
 		case <-time.After(30 * time.Second):
 			err := fmt.Sprintf("\n-- POTENTIAL DEADLOCK --\n\n")
-			err += fmt.Sprintf("--   HOLDING THE LOCK --\n")
+			err += fmt.Sprintf("--  HOLDING THE LOCK SINCE %s  --\n", i.at)
 			err += fmt.Sprintf("%s\n", i.frames)
-			err += fmt.Sprintf("--   TRYING TO LOCK --\n")
+			err += fmt.Sprintf("--  TRYING TO LOCK at %s  --\n", time.Now())
 			err += fmt.Sprintf("%s\n", string(buffer[:n]))
 			err += fmt.Sprintf("\n-- POTENTIAL DEADLOCK --\n")
 			panic(err)
@@ -62,6 +63,7 @@ func (i *RWMutex) Lock() {
 	}()
 
 	i.mutex.Lock()
+	i.at = time.Now()
 
 	// stop the timer
 	got <- true
