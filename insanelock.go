@@ -26,16 +26,17 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 var Activated bool
-var Timeout = time.Second * 60
+var Timeout = time.Second * 30
 
 type RWMutex struct {
 	mutex  sync.RWMutex
-	frames string
-	at time.Time
+	frames atomic.Value
+	at     atomic.Value
 }
 
 func (i *RWMutex) rwlock(l func()) {
@@ -51,10 +52,10 @@ func (i *RWMutex) rwlock(l func()) {
 	go func() {
 		select {
 		case <-got:
-		case <-time.After(30 * time.Second):
+		case <-time.After(Timeout * time.Second):
 			err := fmt.Sprintf("\n-- POTENTIAL DEADLOCK --\n\n")
-			err += fmt.Sprintf("--  HOLDING THE LOCK SINCE %s  --\n", i.at)
-			err += fmt.Sprintf("%s\n", i.frames)
+			err += fmt.Sprintf("--  HOLDING THE LOCK SINCE %s  --\n", i.at.Load())
+			err += fmt.Sprintf("%s\n", i.frames.Load())
 			err += fmt.Sprintf("--  TRYING TO LOCK at %s  --\n", time.Now())
 			err += fmt.Sprintf("%s\n", string(buffer[:n]))
 			err += fmt.Sprintf("\n-- POTENTIAL DEADLOCK --\n")
@@ -63,13 +64,13 @@ func (i *RWMutex) rwlock(l func()) {
 	}()
 
 	l()
-	i.at = time.Now()
+	i.at.Store(time.Now())
 
 	// stop the timer
 	got <- true
 
 	// save the current stack
-	i.frames = string(buffer[:n])
+	i.frames.Store(string(buffer[:n]))
 }
 
 func (i *RWMutex) Lock() {
@@ -77,7 +78,7 @@ func (i *RWMutex) Lock() {
 }
 
 func (i *RWMutex) Unlock() {
-	i.frames = ""
+	i.frames.Store("")
 	i.mutex.Unlock()
 }
 
