@@ -52,7 +52,7 @@ func (i *RWMutex) rwlock(l func()) {
 	go func() {
 		select {
 		case <-got:
-		case <-time.After(Timeout * time.Second):
+		case <-time.After(Timeout):
 			err := fmt.Sprintf("\n-- POTENTIAL DEADLOCK --\n\n")
 			err += fmt.Sprintf("--  HOLDING THE LOCK SINCE %s  --\n", i.at.Load())
 			err += fmt.Sprintf("%s\n", i.frames.Load())
