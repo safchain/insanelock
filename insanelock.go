@@ -38,9 +38,9 @@ type RWMutex struct {
 	at time.Time
 }
 
-func (i *RWMutex) Lock() {
+func (i *RWMutex) rwlock(l func()) {
 	if !Activated {
-		i.mutex.Lock()
+		l()
 		return
 	}
 
@@ -62,7 +62,7 @@ func (i *RWMutex) Lock() {
 		}
 	}()
 
-	i.mutex.Lock()
+	l()
 	i.at = time.Now()
 
 	// stop the timer
@@ -72,12 +72,17 @@ func (i *RWMutex) Lock() {
 	i.frames = string(buffer[:n])
 }
 
+func (i *RWMutex) Lock() {
+	i.rwlock(i.mutex.Lock)
+}
+
 func (i *RWMutex) Unlock() {
+	i.frames = ""
 	i.mutex.Unlock()
 }
 
 func (i *RWMutex) RLock() {
-	i.mutex.RLock()
+	i.rwlock(i.mutex.RLock)
 }
 
 func (i *RWMutex) RUnlock() {
