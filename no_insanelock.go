@@ -1,3 +1,5 @@
+// +build !insanelock
+
 /*
  * Copyright (C) 2017 Sylvain Afchain
  *
@@ -17,22 +19,6 @@
 
 package insanelock
 
-import "testing"
+import "sync"
 
-func dealock() {
-	var lock RWMutex
-	lock.Lock()
-	lock.Lock()
-}
-
-func TestLock(t *testing.T) {
-	func() {
-		defer func() {
-			if r := recover(); r == nil {
-				t.Errorf("TestLock should have panicked!")
-			}
-		}()
-
-		dealock()
-	}()
-}
+type RWMutex = sync.RWMutex
